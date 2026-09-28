@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ma moyenne générale</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#eef2ff,#fdf2f8);color:#20243a}
+  .app{max-width:900px;margin:40px auto;padding:24px}
+  .card{background:white;border-radius:24px;padding:28px;box-shadow:0 10px 35px rgba(40,45,90,.12)}
+  h1{margin:0 0 8px;font-size:32px}
+  .sub{color:#6b7085;margin-bottom:24px}
+  .result{background:#f1f3ff;border-radius:20px;padding:22px;text-align:center;margin-bottom:22px}
+  .result span{display:block;color:#656b83;font-size:15px}
+  .result strong{font-size:48px;display:block;margin-top:5px}
+  .form{display:grid;grid-template-columns:1.4fr .8fr .8fr auto;gap:10px;margin-bottom:20px}
+  input{width:100%;padding:13px;border:1px solid #d9dceb;border-radius:12px;font-size:15px;outline:none}
+  input:focus{border-color:#7c83ff}
+  button{border:0;border-radius:12px;padding:13px 17px;font-weight:bold;cursor:pointer}
+  .add{background:#5b63e6;color:white}
+  .add:hover{background:#4d55d3}
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:left;padding:13px 10px;border-bottom:1px solid #eee}
+  th{color:#6b7085;font-size:13px}
+  .delete{background:#ffe9ed;color:#c43855;padding:8px 11px}
+  .empty{text-align:center;color:#777;padding:28px}
+  .footer{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:10px;flex-wrap:wrap}
+  .clear{background:#f0f1f5;color:#4b5064}
+  @media(max-width:650px){.form{grid-template-columns:1fr 1fr}.form button{grid-column:1/-1}.app{margin:10px auto;padding:12px}.card{padding:18px}th:nth-child(3),td:nth-child(3){display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="card">
+    <h1>📚 Ma moyenne générale</h1>
+    <div class="sub">Ajoute tes matières, tes notes et leurs coefficients.</div>
+
+    <div class="result">
+      <span>Moyenne générale</span>
+      <strong id="average">— / 20</strong>
+    </div>
+
+    <div class="form">
+      <input id="subject" placeholder="Matière (ex. Maths)">
+      <input id="grade" type="number" min="0" max="20" step="0.1" placeholder="Note /20">
+      <input id="coef" type="number" min="0.1" step="0.1" value="1" placeholder="Coef.">
+      <button class="add" onclick="addGrade()">+ Ajouter</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Matière</th><th>Note</th><th>Coefficient</th><th></th></tr>
+      </thead>
+      <tbody id="grades"></tbody>
+    </table>
+
+    <div id="empty" class="empty">Aucune matière pour le moment.</div>
+
+    <div class="footer">
+      <span id="count">0 matière</span>
+      <button class="clear" onclick="clearAll()">Effacer tout</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let grades = JSON.parse(localStorage.getItem("gradesMoyenne") || "[]");
+
+function save(){ localStorage.setItem("gradesMoyenne", JSON.stringify(grades)); }
+
+function addGrade(){
+  const subject=document.getElementById("subject").value.trim();
+  const grade=parseFloat(document.getElementById("grade").value);
+  const coef=parseFloat(document.getElementById("coef").value);
+
+  if(!subject || isNaN(grade) || grade<0 || grade>20 || isNaN(coef) || coef<=0){
+    alert("Vérifie la matière, la note (entre 0 et 20) et le coefficient.");
+    return;
+  }
+  grades.push({subject,grade,coef});
+  save();
+  document.getElementById("subject").value="";
+  document.getElementById("grade").value="";
+  document.getElementById("coef").value="1";
+  render();
+}
+
+function removeGrade(i){
+  grades.splice(i,1);
+  save();
+  render();
+}
+
+function clearAll(){
+  if(confirm("Effacer toutes les matières ?")){
+    grades=[];
+    save();
+    render();
+  }
+}
+
+function render(){
+  const tbody=document.getElementById("grades");
+  const empty=document.getElementById("empty");
+  tbody.innerHTML="";
+  let total=0, coeffs=0;
+
+  grades.forEach((g,i)=>{
+    total += g.grade*g.coef;
+    coeffs += g.coef;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${escapeHtml(g.subject)}</td><td>${g.grade.toFixed(1)} / 20</td><td>${g.coef}</td><td><button class="delete" onclick="removeGrade(${i})">Supprimer</button></td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("average").textContent = coeffs ? (total/coeffs).toFixed(2)+" / 20" : "— / 20";
+  document.getElementById("count").textContent = grades.length + (grades.length>1 ? " matières" : " matière");
+  empty.style.display=grades.length ? "none" : "block";
+}
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+}
+
+document.addEventListener("keydown",e=>{if(e.key==="Enter") addGrade();});
+render();
+</script>
+</body>
+</html>
